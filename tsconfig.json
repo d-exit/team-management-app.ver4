@@ -14,8 +14,17 @@
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "noFallthroughCasesInSwitch": true
+    "noFallthroughCasesInSwitch": true,
+
+    // ↓ ここを追記 ↓
+    "baseUrl": ".",                   // プロジェクトルートを基準にする
+    "paths": {
+      "@/*": ["src/*"]               // "@/foo" → "src/foo"
+    }
+    // ↑ ここまで追記 ↑
   },
   "include": ["src"],
-  "references": [{ "path": "./tsconfig.node.json" }]
+  "references": [
+    { "path": "./tsconfig.node.json" }
+  ]
 }
