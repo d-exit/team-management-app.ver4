@@ -4,8 +4,8 @@
     "useDefineForClassFields": true,
     "lib": ["ESNext", "DOM", "DOM.Iterable"],
     "module": "ESNext",
-    "skipLibCheck": true,
     "moduleResolution": "bundler",
+    "skipLibCheck": true,
     "allowImportingTsExtensions": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
@@ -15,15 +15,14 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
-
-    // ↓ ここを追記 ↓
-    "baseUrl": ".",                   // プロジェクトルートを基準にする
+    // ここから追加
+    "baseUrl": ".",              // ルートを基準にする
     "paths": {
-      "@/*": ["src/*"]               // "@/foo" → "src/foo"
-      "utils/*": ["src/utils/*"],// "utils/..." を src/utils/... にマッピング
-      "types": ["src/types.ts"]  // "types" を src/types.ts にマッピング
+      "@/*": ["src/*"],          // "@/foo" → "src/foo"
+      "utils/*": ["src/utils/*"],// "utils/bar" → "src/utils/bar"
+      "types": ["src/types.ts"]  // "types" → "src/types.ts"
     }
-    // ↑ ここまで追記 ↑
+    // ここまで
   },
   "include": ["src"],
   "references": [
