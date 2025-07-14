@@ -1,0 +1,7 @@
+
+{
+  "name": "チーム管理Webアプリケーション (Team Management Web Application)",
+  "description": "チームのプロフィールや情報を閲覧するためのReactウェブアプリケーションです。 (A React web application for viewing team profiles and information.)",
+  "requestFramePermissions": [],
+  "prompt": ""
+}
