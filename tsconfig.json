@@ -20,6 +20,8 @@
     "baseUrl": ".",                   // プロジェクトルートを基準にする
     "paths": {
       "@/*": ["src/*"]               // "@/foo" → "src/foo"
+      "utils/*": ["src/utils/*"],// "utils/..." を src/utils/... にマッピング
+      "types": ["src/types.ts"]  // "types" を src/types.ts にマッピング
     }
     // ↑ ここまで追記 ↑
   },
