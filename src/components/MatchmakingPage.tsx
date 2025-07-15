@@ -150,9 +150,9 @@ const MatchmakingPage: React.FC<MatchmakingPageProps> = ({ allTeams, onFollowTea
                 <div className="mb-1.5 sm:mb-2 space-x-1 space-y-1 flex flex-wrap">
                     <FilterTag label="県" value={team.prefecture?.substring(0,2)} compact />
                     <FilterTag label="Lv" value={team.level.substring(0,2)} compact />
-                    <FilterTag label="年" value={team.ageCategory} compact />
+                    <FilterTag label="年" value={team.ageCategory!} compact />
                     <FilterTag label="R" value={String(team.rating)} compact />
-                    <FilterTag label="空" value={team.availableSlotsText} compact />
+                    <FilterTag label="空" value={team.availableSlotsText!} compact />
                 </div>
                 
                 <button 

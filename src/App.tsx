@@ -291,7 +291,8 @@ const App: React.FC = () => {
          {currentView === View.TOURNAMENT_GUIDELINES && (
           <TournamentGuidelinesPage 
             allMatches={matches}
-            selectedMatchId={selectedMatchIdForGuideline}
+            selectedMatchId={selectedMatchIdForGuideline!
+            }
             managedTeam={selectedManagedTeam}
             onSaveGuidelineAsNewMatch={handleSaveNewGuidelineAsNewMatch}
             onUpdateGuidelineForMatch={handleUpdateGuidelineForMatch}

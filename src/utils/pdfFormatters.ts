@@ -1,8 +1,7 @@
 // src/utils/pdfFormatters.ts
-import { TournamentBracket, LeagueTable, LeagueMatch } from './types';
+import { TournamentBracket, LeagueTable, LeagueMatch } from '../types';
 
 const escapeHTML = (unsafe: string): string => {
-    if (typeof unsafe !== 'string') return '';
     return unsafe
          .replace(/&/g, "&amp;")
          .replace(/</g, "&lt;")
@@ -15,10 +14,10 @@ export const formatBracketForPdf = (bracket: TournamentBracket): string => {
     let html = `<h2 class="fixture-title">トーナメント表: ${escapeHTML(bracket.name)}</h2>`;
     html += `<div class="bracket-container">`;
 
-    bracket.rounds.forEach(round => {
+    bracket.rounds.forEach((round) => {
         html += `<div class="bracket-round">`;
         html += `<h3 class="bracket-round-title">${escapeHTML(round.name)}</h3>`;
-        round.matches.forEach(match => {
+        round.matches.forEach((match) => {
             const team1Name = match.team1?.name || match.placeholderTeam1Text || '未定';
             const team2Name = match.team2?.name || match.placeholderTeam2Text || '未定';
             const team1Score = typeof match.team1Score === 'number' ? match.team1Score : '-';
@@ -36,11 +35,10 @@ export const formatBracketForPdf = (bracket: TournamentBracket): string => {
     return html;
 };
 
-
 export const formatLeagueForPdf = (league: LeagueTable): string => {
     let html = `<h2 class="fixture-title">リーグ表: ${escapeHTML(league.name)}</h2>`;
 
-    league.groups.forEach(group => {
+    league.groups.forEach((group) => {
         html += `<h3 class="league-group-title">${escapeHTML(group.name)}</h3>`;
         
         // Standings Table
@@ -48,7 +46,11 @@ export const formatLeagueForPdf = (league: LeagueTable): string => {
         html += `<thead><tr><th>#</th><th>チーム</th><th>試</th><th>勝</th><th>分</th><th>敗</th><th>得失</th><th>点</th></tr></thead>`;
         html += `<tbody>`;
         
-        const sortedTeams = [...group.teams].sort((a, b) => b.points - a.points || b.goalDifference - a.goalDifference || b.goalsFor - a.goalsFor);
+        const sortedTeams = [...group.teams].sort((a, b) =>
+            b.points - a.points ||
+            b.goalDifference - a.goalDifference ||
+            b.goalsFor - a.goalsFor
+        );
         
         sortedTeams.forEach((stats, index) => {
             html += `<tr>
@@ -66,7 +68,7 @@ export const formatLeagueForPdf = (league: LeagueTable): string => {
         html += `</tbody></table>`;
         
         // Fixture List
-        if(group.matches.length > 0) {
+        if (group.matches.length > 0) {
             html += `<h4 class="fixture-list-title">試合日程</h4>`;
             html += `<table class="fixture-table">`;
             html += `<thead><tr><th>時刻</th><th>コート</th><th colspan="3">対戦</th></tr></thead>`;
@@ -78,7 +80,7 @@ export const formatLeagueForPdf = (league: LeagueTable): string => {
                 const score2 = typeof match.team2Score === 'number' ? match.team2Score : '-';
                 html += `<tr>
                             <td>${match.startTime || '-'}</td>
-                            <td>${match.court || '-'}</td>
+                            <td>${match.court ?? '-'}</td>
                             <td class="fixture-team-name">${escapeHTML(team1Name)}</td>
                             <td class="fixture-score">${score1} - ${score2}</td>
                             <td class="fixture-team-name">${escapeHTML(team2Name)}</td>
