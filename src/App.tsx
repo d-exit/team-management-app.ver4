@@ -63,8 +63,8 @@ const App: React.FC = () => {
               ...m, 
               detailedTournamentInfo: guidelineData,
               location: guidelineData.eventName,
-              date: guidelineData.eventDateTime.eventDate,
-              time: guidelineData.eventDateTime.startTime
+              date: guidelineData.eventDateTime.eventDate ?? undefined,
+              time: guidelineData.eventDateTime.startTime ?? undefined,
             } 
           : m
       )

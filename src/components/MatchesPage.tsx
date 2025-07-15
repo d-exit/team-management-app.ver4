@@ -214,12 +214,12 @@ const MatchesPage: React.FC<MatchesPageProps> = ({ matches, teams, onUpdateMatch
           selectedTeamsArray, 
           seedTeamIds, 
           numCourts, 
-          newMatch.time, 
-          newMatch.matchDurationInMinutes, 
-          newMatch.restTimeInMinutes
+          newMatch.time!, 
+          newMatch.matchDurationInMinutes!, 
+          newMatch.restTimeInMinutes!
         ) || undefined;
     } else if (wizardState.type === 'league') {
-        const prelimLeague = generateLeagueTable(selectedTeamsArray, numGroupsForLeague, numCourts, newMatch.time, newMatch.matchDurationInMinutes, newMatch.restTimeInMinutes);
+        const prelimLeague = generateLeagueTable(selectedTeamsArray, numGroupsForLeague, numCourts, newMatch.time!, newMatch.matchDurationInMinutes!, newMatch.restTimeInMinutes!);
         if (prelimLeague) {
             finalLeagueComp = {
                 id: `lc-preview-${Date.now()}`, name: newMatch.location || prelimLeague.name,
@@ -261,7 +261,7 @@ const MatchesPage: React.FC<MatchesPageProps> = ({ matches, teams, onUpdateMatch
         if (!newMatch.opponentTeamId) { alert('対戦相手が選択されていません。'); return; }
         const opponent = teams.find(t => t.id === newMatch.opponentTeamId);
         participantIds.push(newMatch.opponentTeamId);
-        matchToAdd = { ...newMatch, id: `match-${Date.now()}`, ourTeamId: managedTeamId, status: MatchStatus.PREPARATION, opponentTeamName: opponent?.name, participants: [{ teamId: newMatch.opponentTeamId, status: ParticipantStatus.PENDING }], } as Match;
+        matchToAdd = { ...newMatch, id: `match-${Date.now()}`, ourTeamId: managedTeamId, status: MatchStatus.PREPARATION, opponentTeamName: opponent!.name, participants: [{ teamId: newMatch.opponentTeamId!, status: ParticipantStatus.PENDING }], } as Match;
     } else {
         participantIds = selectedTeamIdsForCompetition.filter(id => id !== managedTeamId);
         matchToAdd = { ...newMatch, id: `match-${Date.now()}`, ourTeamId: managedTeamId, status: MatchStatus.PREPARATION, bracketData: previewData?.bracket, leagueCompetitionData: previewData?.league, participants: participantIds.length > 0 ? participantIds.map(id => ({ teamId: id, status: ParticipantStatus.PENDING })) : undefined, } as Match;
