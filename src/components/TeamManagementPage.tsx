@@ -7,7 +7,6 @@ import { deepClone } from '../utils/deepClone';
 interface TeamManagementPageProps {
   team: Team; // The team to manage/edit
   onUpdateTeam: (updatedTeam: Team) => void;
-  pastMatchResults: PastMatchResult[];
   allTeams: Team[];
   matches: Match[]; // To display scoring log
 }
@@ -35,7 +34,7 @@ const RankItem: React.FC<{ label: string; value: string | number; className?: st
   </div>
 );
 
-const TeamManagementPage: React.FC<TeamManagementPageProps> = ({ team, onUpdateTeam, pastMatchResults, allTeams, matches }) => {
+const TeamManagementPage: React.FC<TeamManagementPageProps> = ({ team, onUpdateTeam, allTeams, matches }) => {
   const [editableTeam, setEditableTeam] = useState<Team>(() => deepClone(team));
   const [logoPreview, setLogoPreview] = useState<string | null>(team.logoUrl);
   const [editMode, setEditMode] = useState(false);
