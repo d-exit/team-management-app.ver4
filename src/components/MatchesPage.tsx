@@ -1,17 +1,17 @@
 // src/components/MatchesPage.tsx
-import React, { useState, useCallback, useMemo, useRef } from 'react';
-import { Match, MatchStatus, MatchType, Team, TournamentBracket, LeagueTable, BracketTeam, FollowedTeam, LeagueTeamStats, BracketMatch, LeagueCompetition, LeagueGroup, LeagueMatch, BracketRound, MatchScoringEvent, ChatThread, ChatMessage, ParticipantStatus, TournamentInfoFormData } from '../types';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
+import { BracketMatch, BracketRound, BracketTeam, ChatMessage, ChatThread, FollowedTeam, LeagueCompetition, LeagueGroup, LeagueMatch, LeagueTable, Match, MatchScoringEvent, MatchStatus, MatchType, ParticipantStatus, Team, TournamentBracket, TournamentInfoFormData } from '../types';
+import { formatBracketForChat } from '../utils/bracketFormatter';
 import { generateTournamentBracket } from '../utils/bracketGenerator';
-import { generateLeagueTable, getAdvancingTeams, addMinutesToTime } from '../utils/leagueGenerator';
-import { moveTeamBetweenGroups, updateLeagueStatsAfterMatch } from '../utils/leagueTableEditor';
-import { sanitizeMatchesState } from '../utils/stateSanitizer';
 import { deepClone } from '../utils/deepClone';
 import { formatGuidelineWithFixturesForChat } from '../utils/guidelineFormatter';
-import { formatBracketForChat } from '../utils/bracketFormatter';
 import { formatLeagueForChat } from '../utils/leagueFormatter';
+import { addMinutesToTime, generateLeagueTable, getAdvancingTeams } from '../utils/leagueGenerator';
+import { moveTeamBetweenGroups, updateLeagueStatsAfterMatch } from '../utils/leagueTableEditor';
 import { calculateNewRatings } from '../utils/ratingCalculator';
-import EditMatchModal, { EditMatchModalRef } from './EditMatchModal';
+import { sanitizeMatchesState } from '../utils/stateSanitizer';
 import BracketView from './BracketView';
+import EditMatchModal, { EditMatchModalRef } from './EditMatchModal';
 import LeagueTableView from './LeagueTableView';
 
 interface MatchesPageProps {

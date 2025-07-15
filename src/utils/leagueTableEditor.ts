@@ -1,7 +1,7 @@
 // src/utils/leagueTableEditor.ts
-import { LeagueTable, LeagueGroup, LeagueTeamStats, LeagueMatch, LeagueCompetition } from 'types';
-import { generateFixturesForGroup } from 'utils/leagueGenerator';
+import { LeagueCompetition, LeagueGroup, LeagueMatch } from 'types';
 import { deepClone } from 'utils/deepClone';
+import { generateFixturesForGroup } from 'utils/leagueGenerator';
 
 const addMinutesToTime = (time: string, minutes: number): string => {
     const [hours, mins] = time.split(':').map(Number);

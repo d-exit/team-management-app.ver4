@@ -1,5 +1,4 @@
 // src/utils/ratingCalculator.ts
-import { Team } from 'types';
 
 const K_FACTOR = 32;
 

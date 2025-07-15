@@ -1,6 +1,6 @@
 // components/FollowedTeamsPage.tsx
-import React, { useState, useMemo } from 'react';
-import { FollowedTeam, Team, TeamLevel } from '../types';
+import React, { useMemo, useState } from 'react';
+import { FollowedTeam, Team } from '../types';
 
 interface FollowedTeamsPageProps {
   followedTeams: FollowedTeam[];

@@ -1,5 +1,5 @@
 // src/utils/bracketGenerator.ts
-import { Team, BracketTeam, BracketMatch, BracketRound, TournamentBracket } from 'types';
+import { BracketMatch, BracketRound, Team, TournamentBracket } from 'types';
 
 // Helper function to add minutes to a time string (HH:mm)
 const addMinutesToTime = (time: string, minutes: number): string => {

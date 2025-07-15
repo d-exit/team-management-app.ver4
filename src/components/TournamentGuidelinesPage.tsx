@@ -1,9 +1,9 @@
 // src/components/TournamentGuidelinesPage.tsx
-import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
-import { Match, TournamentInfoFormData, Team, MatchType, MatchStatus, ChatThread, ChatMessage } from 'types';
-import { prepareTournamentPDFContent } from 'utils/pdfGenerator';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ChatMessage, ChatThread, Match, MatchStatus, MatchType, Team, TournamentInfoFormData } from 'types';
 import { deepClone } from 'utils/deepClone';
 import { formatGuidelineWithFixturesForChat } from 'utils/guidelineFormatter';
+import { prepareTournamentPDFContent } from 'utils/pdfGenerator';
 
 // Initial state for the form, ensures all fields are defined.
 const initialFormData: TournamentInfoFormData = {

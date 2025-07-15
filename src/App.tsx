@@ -1,18 +1,18 @@
 // App.tsx
-import React, { useState, useCallback, useMemo } from 'react';
-import { Team, View, Match, Venue, ScheduleEvent, FollowedTeam, ChatThread, TeamLevel, ChatMessage, MatchType, MatchStatus, TournamentInfoFormData } from './types';
-import { mockTeams, mockMatches, mockVenues, mockScheduleEvents, mockPastMatchResults, mockChatThreads, mockChatMessages } from './data/mockData';
-import TeamProfilePage from '@/components/TeamProfilePage';
-import MatchesPage from '@/components/MatchesPage';
-import VenueBookingPage from '@/components/VenueBookingPage';
-import SchedulePage from '@/components/SchedulePage';
-import TeamManagementPage from '@/components/TeamManagementPage';
-import FollowedTeamsPage from '@/components/FollowedTeamsPage';
 import ChatPage from '@/components/ChatPage';
 import ChatScreen from '@/components/ChatScreen';
+import FollowedTeamsPage from '@/components/FollowedTeamsPage';
+import MatchesPage from '@/components/MatchesPage';
 import MatchmakingPage from '@/components/MatchmakingPage';
-import TournamentGuidelinesPage from '@/components/TournamentGuidelinesPage';
+import SchedulePage from '@/components/SchedulePage';
+import TeamManagementPage from '@/components/TeamManagementPage';
+import TeamProfilePage from '@/components/TeamProfilePage';
 import TeamSelectionPage from '@/components/TeamSelectionPage';
+import TournamentGuidelinesPage from '@/components/TournamentGuidelinesPage';
+import VenueBookingPage from '@/components/VenueBookingPage';
+import React, { useCallback, useMemo, useState } from 'react';
+import { mockChatMessages, mockChatThreads, mockMatches, mockPastMatchResults, mockScheduleEvents, mockTeams, mockVenues } from './data/mockData';
+import { ChatMessage, ChatThread, FollowedTeam, Match, ScheduleEvent, Team, TeamLevel, TournamentInfoFormData, Venue, View } from './types';
 
 const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<View>(View.TEAM_MANAGEMENT);

@@ -1,4 +1,4 @@
-import { Team, TeamLevel, Member, Match, MatchType, MatchStatus, Venue, ScheduleEvent, ScheduleEventType, PastMatchResult, ChatThread, ChatMessage, TournamentInfoFormData } from '../types';
+import { ChatMessage, ChatThread, Match, MatchStatus, MatchType, Member, PastMatchResult, ScheduleEvent, ScheduleEventType, Team, TeamLevel, Venue } from '../types';
 
 // Members for Team 1
 export const mockMembers1: Member[] = [
