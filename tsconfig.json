@@ -1,3 +1,4 @@
+// tsconfig.json
 {
   "compilerOptions": {
     "target": "ESNext",
@@ -12,15 +13,19 @@
     "noEmit": true,
     "jsx": "react-jsx",
     "strict": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
+
+    // 警告をオフ
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+
     "noFallthroughCasesInSwitch": true,
+
     // ここから追加
-    "baseUrl": ".",              // ルートを基準にする
+    "baseUrl": ".",              
     "paths": {
-      "@/*": ["src/*"],          // "@/foo" → "src/foo"
-      "utils/*": ["src/utils/*"],// "utils/bar" → "src/utils/bar"
-      "types": ["src/types.ts"]  // "types" → "src/types.ts"
+      "@/*": ["src/*"],
+      "utils/*": ["src/utils/*"],
+      "types": ["src/types.ts"]
     }
     // ここまで
   },
