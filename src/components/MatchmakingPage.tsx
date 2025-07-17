@@ -9,10 +9,10 @@ interface MatchmakingPageProps {
   onSelectTeam: (team: Team) => void; // チーム選択ハンドラ
 }
 
-// 都道府県リスト（必要に応じて追加してください）
+// 都道府県リスト
 const prefectures = ['東京都', '大阪府', '福岡県', '北海道', '神奈川県'];
 
-// TeamLevel の全列挙値
+// レベル（TeamLevel の列挙値をそのまま使う）
 const teamLevels = Object.values(TeamLevel) as TeamLevel[];
 
 // 年齢カテゴリ
@@ -20,7 +20,7 @@ const ageCategories: Array<'U-10' | 'U-12' | 'U-15' | '一般'> = [
   'U-10', 'U-12', 'U-15', '一般'
 ];
 
-// フィルター用のローカル型（すべて必須）
+// フィルター状態の型（すべて必須にする）
 type FilterState = {
   prefecture: string[];
   level: TeamLevel[];
@@ -35,19 +35,18 @@ const MatchmakingPage: React.FC<MatchmakingPageProps> = ({
   followedTeamIds,
   onSelectTeam,
 }) => {
-  // フィルター状態を初期化
+  // フィルター初期値
   const [filters, setFilters] = useState<FilterState>({
-    prefecture: [],      // 都道府県複数選択
-    level: [],           // レベル複数選択
-    ageCategory: [],     // 年齢カテゴリ複数選択
-    ratingMin: 0,        // レーティング最小
-    ratingMax: 9999,     // レーティング最大
+    prefecture: [],
+    level: [],
+    ageCategory: [],
+    ratingMin: 0,
+    ratingMax: 9999,
   });
 
-  // 空き日程フィルター（日付文字列 or 空文字）
   const [availableDateFilter, setAvailableDateFilter] = useState<string>('');
 
-  // チェックボックス切替（都府県・レベル・年齢カテゴリ）
+  // 多選択フィルター切替
   const handleMultiSelectChange = (
     field: keyof Omit<FilterState, 'ratingMin' | 'ratingMax'>,
     value: string
@@ -61,7 +60,7 @@ const MatchmakingPage: React.FC<MatchmakingPageProps> = ({
     });
   };
 
-  // レーティングの範囲入力ハンドラ
+  // レーティング範囲変更
   const handleRatingChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFilters(prev => ({
@@ -70,20 +69,21 @@ const MatchmakingPage: React.FC<MatchmakingPageProps> = ({
     }));
   };
 
-  // フィルターを適用したおすすめチームを算出
+  // おすすめチームを絞り込み
   const recommendedTeams = useMemo(() => {
     return allTeams.filter(team => {
       const matchPref    = filters.prefecture.length === 0 || filters.prefecture.includes(team.prefecture || '');
       const matchLevel   = filters.level.length === 0 || filters.level.includes(team.level);
-      const matchAge     = filters.ageCategory.length === 0 || filters.ageCategory.includes(team.ageCategory as any);
+      const matchAge     = filters.ageCategory.length === 0 || filters.ageCategory.includes(team.ageCategory || '一般');
       const matchMin     = team.rating >= filters.ratingMin;
       const matchMax     = team.rating <= filters.ratingMax;
-      const matchDate    = !availableDateFilter || ['空き', '週末のみ空き'].includes(team.availableSlotsText || '');
+      const text         = team.availableSlotsText || '';
+      const matchDate    = !availableDateFilter || ['空き', '週末のみ空き'].includes(text);
       return matchPref && matchLevel && matchAge && matchMin && matchMax && matchDate;
     });
   }, [allTeams, filters, availableDateFilter]);
 
-  // フィルタータグコンポーネント
+  // フィルタータグ
   const FilterTag: React.FC<{
     label: string;
     value: string;
@@ -106,10 +106,9 @@ const MatchmakingPage: React.FC<MatchmakingPageProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* タイトル */}
       <h2 className="text-3xl font-semibold text-sky-300">チームマッチング</h2>
 
-      {/* フィルター入力セクション */}
+      {/* フィルター入力 */}
       <div className="bg-slate-800 p-4 rounded-xl shadow">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* 都道府県 */}
@@ -129,7 +128,6 @@ const MatchmakingPage: React.FC<MatchmakingPageProps> = ({
               ))}
             </div>
           </div>
-
           {/* レベル */}
           <div>
             <h3 className="text-sm font-semibold text-slate-300 mb-2">レベル</h3>
@@ -147,7 +145,6 @@ const MatchmakingPage: React.FC<MatchmakingPageProps> = ({
               ))}
             </div>
           </div>
-
           {/* 年齢カテゴリ */}
           <div>
             <h3 className="text-sm font-semibold text-slate-300 mb-2">年齢カテゴリ</h3>
@@ -165,8 +162,7 @@ const MatchmakingPage: React.FC<MatchmakingPageProps> = ({
               ))}
             </div>
           </div>
-
-          {/* レーティング範囲 */}
+          {/* レーティング */}
           <div className="md:col-span-2">
             <h3 className="text-sm font-semibold text-slate-300 mb-2">レーティング</h3>
             <div className="flex space-x-2">
@@ -188,7 +184,6 @@ const MatchmakingPage: React.FC<MatchmakingPageProps> = ({
               />
             </div>
           </div>
-
           {/* 空き日程 */}
           <div>
             <h3 className="text-sm font-semibold text-slate-300 mb-2">空き日程</h3>
@@ -202,7 +197,7 @@ const MatchmakingPage: React.FC<MatchmakingPageProps> = ({
         </div>
       </div>
 
-      {/* 選択中フィルタータグ */}
+      {/* 選択中のタグ */}
       <div className="flex flex-wrap gap-2">
         {filters.prefecture.map(p => (
           <FilterTag
@@ -300,7 +295,9 @@ const MatchmakingPage: React.FC<MatchmakingPageProps> = ({
           ))}
         </div>
       ) : (
-        <p className="text-center text-slate-400 py-10">条件に合うチームがいません。</p>
+        <p className="text-center text-slate-400 py-10">
+          条件に合うチームがいません。
+        </p>
       )}
     </div>
   );
