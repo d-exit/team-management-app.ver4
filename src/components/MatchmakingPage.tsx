@@ -1,24 +1,33 @@
 // src/components/MatchmakingPage.tsx
 import React, { useState, useMemo } from 'react';
-import { Team, TeamLevel, MatchmakingFilters } from '../types';
+import { Team, TeamLevel } from '../types';
 
 interface MatchmakingPageProps {
   allTeams: Team[];                   // マッチング対象の全チーム
   onFollowTeam: (team: Team) => void; // チームをフォロー
-  followedTeamIds: string[];          // フォロー済みチームのIDリスト
-  onSelectTeam: (team: Team) => void; // チーム選択（プロフィール表示など）
+  followedTeamIds: string[];          // フォロー済みチームID一覧
+  onSelectTeam: (team: Team) => void; // チーム選択ハンドラ
 }
 
-// 都道府県のリスト（必要に応じて追加してください）
+// 都道府県リスト（必要に応じて追加してください）
 const prefectures = ['東京都', '大阪府', '福岡県', '北海道', '神奈川県'];
 
-// TeamLevel の全値
+// TeamLevel の全列挙値
 const teamLevels = Object.values(TeamLevel) as TeamLevel[];
 
-// 年齢カテゴリ（必ず文字列リテラルで定義）
+// 年齢カテゴリ
 const ageCategories: Array<'U-10' | 'U-12' | 'U-15' | '一般'> = [
   'U-10', 'U-12', 'U-15', '一般'
 ];
+
+// フィルター用のローカル型（すべて必須）
+type FilterState = {
+  prefecture: string[];
+  level: TeamLevel[];
+  ageCategory: Array<'U-10' | 'U-12' | 'U-15' | '一般'>;
+  ratingMin: number;
+  ratingMax: number;
+};
 
 const MatchmakingPage: React.FC<MatchmakingPageProps> = ({
   allTeams,
@@ -26,20 +35,21 @@ const MatchmakingPage: React.FC<MatchmakingPageProps> = ({
   followedTeamIds,
   onSelectTeam,
 }) => {
-  // フィルター状態。各フィールドは必ず値を持つよう初期化。
-  const [filters, setFilters] = useState<MatchmakingFilters>({
-    prefecture: [],    // 都道府県の複数選択
-    level: [],         // レベルの複数選択
-    ageCategory: [],   // 年齢カテゴリの複数選択
-    ratingMin: 0,      // 最小レーティング
-    ratingMax: 9999,   // 最大レーティング
+  // フィルター状態を初期化
+  const [filters, setFilters] = useState<FilterState>({
+    prefecture: [],      // 都道府県複数選択
+    level: [],           // レベル複数選択
+    ageCategory: [],     // 年齢カテゴリ複数選択
+    ratingMin: 0,        // レーティング最小
+    ratingMax: 9999,     // レーティング最大
   });
+
   // 空き日程フィルター（日付文字列 or 空文字）
   const [availableDateFilter, setAvailableDateFilter] = useState<string>('');
 
-  // 複数選択チェックボックスの切替
+  // チェックボックス切替（都府県・レベル・年齢カテゴリ）
   const handleMultiSelectChange = (
-    field: keyof Omit<MatchmakingFilters, 'ratingMin' | 'ratingMax'>,
+    field: keyof Omit<FilterState, 'ratingMin' | 'ratingMax'>,
     value: string
   ) => {
     setFilters(prev => {
@@ -51,7 +61,7 @@ const MatchmakingPage: React.FC<MatchmakingPageProps> = ({
     });
   };
 
-  // レーティング範囲入力のハンドラ
+  // レーティングの範囲入力ハンドラ
   const handleRatingChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFilters(prev => ({
@@ -60,28 +70,20 @@ const MatchmakingPage: React.FC<MatchmakingPageProps> = ({
     }));
   };
 
-  // フィルターを適用しておすすめチームを算出
+  // フィルターを適用したおすすめチームを算出
   const recommendedTeams = useMemo(() => {
     return allTeams.filter(team => {
-      const matchPref = filters.prefecture.length
-        ? filters.prefecture.includes(team.prefecture || '')
-        : true;
-      const matchLevel = filters.level.length
-        ? filters.level.includes(team.level)
-        : true;
-      const matchAge = filters.ageCategory.length
-        ? filters.ageCategory.includes(team.ageCategory as any)
-        : true;
-      const matchMin = team.rating >= filters.ratingMin;
-      const matchMax = team.rating <= filters.ratingMax;
-      const matchDate = availableDateFilter
-        ? ['空き', '週末のみ空き'].includes(team.availableSlotsText || '')
-        : true;
+      const matchPref    = filters.prefecture.length === 0 || filters.prefecture.includes(team.prefecture || '');
+      const matchLevel   = filters.level.length === 0 || filters.level.includes(team.level);
+      const matchAge     = filters.ageCategory.length === 0 || filters.ageCategory.includes(team.ageCategory as any);
+      const matchMin     = team.rating >= filters.ratingMin;
+      const matchMax     = team.rating <= filters.ratingMax;
+      const matchDate    = !availableDateFilter || ['空き', '週末のみ空き'].includes(team.availableSlotsText || '');
       return matchPref && matchLevel && matchAge && matchMin && matchMax && matchDate;
     });
   }, [allTeams, filters, availableDateFilter]);
 
-  // フィルタータグ
+  // フィルタータグコンポーネント
   const FilterTag: React.FC<{
     label: string;
     value: string;
@@ -95,7 +97,7 @@ const MatchmakingPage: React.FC<MatchmakingPageProps> = ({
     >
       {label}：{value}
       {onRemove && (
-        <button onClick={onRemove} className="ml-1 text-sm text-sky-100 hover:text-white">
+        <button onClick={onRemove} className="ml-1 text-sm hover:text-white">
           ✕
         </button>
       )}
@@ -200,7 +202,7 @@ const MatchmakingPage: React.FC<MatchmakingPageProps> = ({
         </div>
       </div>
 
-      {/* 選択中のフィルタータグ */}
+      {/* 選択中フィルタータグ */}
       <div className="flex flex-wrap gap-2">
         {filters.prefecture.map(p => (
           <FilterTag
@@ -270,7 +272,11 @@ const MatchmakingPage: React.FC<MatchmakingPageProps> = ({
                 <div className="flex flex-wrap gap-1 mt-2 mb-4">
                   <FilterTag label="県" value={team.prefecture || '-'} compact />
                   <FilterTag label="Lv" value={team.level} compact />
-                  <FilterTag label="年齢" value={team.ageCategory || '一般'} compact />
+                  <FilterTag
+                    label="年齢"
+                    value={team.ageCategory || '一般'}
+                    compact
+                  />
                   <FilterTag label="R" value={String(team.rating)} compact />
                   <FilterTag
                     label="空き"
