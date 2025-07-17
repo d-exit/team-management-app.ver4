@@ -1034,35 +1034,137 @@ const MatchesPage: React.FC<MatchesPageProps> = ({ matches, teams, onUpdateMatch
         </div>
       )}
 
-      {scoreModalState && (() => {
-          const team1Members = teams.find(t=>t.id === scoreModalState.team1Id)?.members || [];
-          const team2Members = teams.find(t=>t.id === scoreModalState.team2Id)?.members || [];
-          return (
-            <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50">
-                <div className="bg-slate-800 p-6 rounded-xl w-full max-w-lg">
-                    <h3 className="text-2xl text-sky-400 mb-4">結果入力</h3>
-                    <p className="text-lg mb-4 text-center">{scoreModalState.team1Name} vs {scoreModalState.team2Name}</p>
-                    <div className="flex gap-4 items-center justify-center mb-4">
-                        <input type="number" id="team1Score" placeholder="0" className="w-20 text-center text-2xl bg-slate-700 p-2 rounded-md"/>
-                        <span>-</span>
-                        <input type="number" id="team2Score" placeholder="0" className="w-20 text-center text-2xl bg-slate-700 p-2 rounded-md"/>
-                    </div>
-                     <div className="mb-4">
-                        <label className="block text-sm font-medium text-slate-300 mb-1">引き分けの場合の結果</label>
-                        <select onChange={e => setManualWinnerSelection(e.target.value as any)} className="w-full bg-slate-700 p-2 rounded-md">
-                            <option value="">選択してください</option>
-                            <option value="team1">{scoreModalState.team1Name}の勝利 (PK等)</option>
-                            <option value="team2">{scoreModalState.team2Name}の勝利 (PK等)</option>
-                            {scoreModalState.type !== 'bracket' && <option value="draw">引き分け</option>}
-                        </select>
-                    </div>
-                    <div className="flex gap-4 pt-4 border-t border-slate-700">
-                        <button onClick={() => setScoreModalState(null)} className="flex-1 bg-slate-600 py-2 rounded-lg">キャンセル</button>
-                        <button onClick={() => handleSaveScore((document.getElementById('team1Score') as HTMLInputElement).value, (document.getElementById('team2Score') as HTMLInputElement).value)} className="flex-1 bg-sky-500 py-2 rounded-lg">保存</button>
-                    </div>
-                </div>
-            </div>
-        )})()}
+{scoreModalState && (() => {
+  // スコア入力対象の両チームのメンバーリストを取得
+  const team1Members = teams.find(t => t.id === scoreModalState.team1Id)?.members || [];
+  const team2Members = teams.find(t => t.id === scoreModalState.team2Id)?.members || [];
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50">
+      <div className="bg-slate-800 p-6 rounded-xl w-full max-w-lg">
+        <h3 className="text-2xl text-sky-400 mb-4">結果入力</h3>
+        <p className="text-lg mb-4 text-center">
+          {scoreModalState.team1Name} vs {scoreModalState.team2Name}
+        </p>
+
+        {/* スコア入力欄 */}
+        <div className="flex gap-4 items-center justify-center mb-6">
+          <input
+            type="number"
+            id="team1Score"
+            placeholder="0"
+            className="w-20 text-center text-2xl bg-slate-700 p-2 rounded-md"
+          />
+          <span>-</span>
+          <input
+            type="number"
+            id="team2Score"
+            placeholder="0"
+            className="w-20 text-center text-2xl bg-slate-700 p-2 rounded-md"
+          />
+        </div>
+
+        {/* 引き分け時の勝者選択 */}
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-slate-300 mb-1">
+            引き分けの場合の結果
+          </label>
+          <select
+            onChange={e => setManualWinnerSelection(e.target.value as any)}
+            className="w-full bg-slate-700 p-2 rounded-md"
+          >
+            <option value="">選択してください</option>
+            <option value="team1">{scoreModalState.team1Name} の勝利 (PK等)</option>
+            <option value="team2">{scoreModalState.team2Name} の勝利 (PK等)</option>
+            {scoreModalState.type !== 'bracket' && (
+              <option value="draw">引き分け</option>
+            )}
+          </select>
+        </div>
+
+        {/* 得点者プルダウン */}
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-slate-300 mb-1">
+            得点者
+          </label>
+          <select
+            onChange={e => setNewScoringEvent(p => ({ ...p, scorerName: e.target.value }))}
+            value={newScoringEvent.scorerName}
+            className="w-full bg-slate-700 p-2 rounded-md"
+          >
+            <option value="">選択してください</option>
+            {team1Members.map(m => (
+              <option key={m.id} value={m.name}>
+                {m.name}
+              </option>
+            ))}
+            <option value="manual">手動入力</option>
+          </select>
+          {newScoringEvent.scorerName === 'manual' && (
+            <input
+              type="text"
+              placeholder="得点者名"
+              value={manualScorerName}
+              onChange={e => setManualScorerName(e.target.value)}
+              className="w-full bg-slate-700 p-2 rounded-md mt-2"
+            />
+          )}
+        </div>
+
+        {/* アシスト者プルダウン */}
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-slate-300 mb-1">
+            アシスト者 (任意)
+          </label>
+          <select
+            onChange={e => setNewScoringEvent(p => ({ ...p, assistName: e.target.value }))}
+            value={newScoringEvent.assistName}
+            className="w-full bg-slate-700 p-2 rounded-md"
+          >
+            <option value="">選択してください</option>
+            {team1Members.map(m => (
+              <option key={m.id} value={m.name}>
+                {m.name}
+              </option>
+            ))}
+            <option value="manual">手動入力</option>
+          </select>
+          {newScoringEvent.assistName === 'manual' && (
+            <input
+              type="text"
+              placeholder="アシスト者名"
+              value={manualAssistName}
+              onChange={e => setManualAssistName(e.target.value)}
+              className="w-full bg-slate-700 p-2 rounded-md mt-2"
+            />
+          )}
+        </div>
+
+        {/* ボタン群 */}
+        <div className="flex gap-4 pt-4 border-t border-slate-700">
+          <button
+            onClick={() => setScoreModalState(null)}
+            className="flex-1 bg-slate-600 py-2 rounded-lg"
+          >
+            キャンセル
+          </button>
+          <button
+            onClick={() =>
+              handleSaveScore(
+                (document.getElementById('team1Score') as HTMLInputElement).value,
+                (document.getElementById('team2Score') as HTMLInputElement).value
+              )
+            }
+            className="flex-1 bg-sky-500 py-2 rounded-lg"
+          >
+            保存
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+})()}
+
         {scoringInfo && (
             <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50">
                  <div className="bg-slate-800 p-6 rounded-xl w-full max-w-lg max-h-[90vh] flex flex-col">

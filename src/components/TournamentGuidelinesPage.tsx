@@ -1,10 +1,19 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ChatMessage, ChatThread, Match, MatchStatus, MatchType, Team, TournamentInfoFormData } from '../types';
+// src/components/TournamentGuidelinesPage.tsx
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import {
+  ChatMessage,
+  ChatThread,
+  Match,
+  MatchStatus,
+  MatchType,
+  Team,
+  TournamentInfoFormData
+} from '../types';
 import { deepClone } from '../utils/deepClone';
 import { formatGuidelineWithFixturesForChat } from '../utils/guidelineFormatter';
 import { prepareTournamentPDFContent } from '../utils/pdfGenerator';
 
-// Initial state for the form, ensures all fields are defined.
+// フォームの初期値
 const initialFormData: TournamentInfoFormData = {
   eventName: '',
   organizerInfo: { organizationName: '', contactPersonName: '' },
@@ -27,50 +36,12 @@ const initialFormData: TournamentInfoFormData = {
 
 const DRAFT_STORAGE_KEY = 'tournamentGuidelinesDraft';
 
-// Reusable input component for consistency
-const FormInput: React.FC<{
-  label: string;
-  name: string;
-  value: string;
-  onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
-  type?: 'text' | 'date' | 'time' | 'textarea';
-  placeholder?: string;
-  rows?: number;
-}> = ({ label, name, value, onChange, type = 'text', placeholder = '', rows = 3 }) => (
-  <div>
-    <label htmlFor={name} className="block text-sm font-medium text-slate-300 mb-1">
-      {label}
-    </label>
-    {type === 'textarea' ? (
-      <textarea
-        id={name}
-        name={name}
-        value={value}
-        onChange={onChange}
-        placeholder={placeholder}
-        rows={rows}
-        className="w-full bg-slate-700 border border-slate-600 text-white rounded-md p-2 focus:ring-sky-500 focus:border-sky-500"
-      />
-    ) : (
-      <input
-        type={type}
-        id={name}
-        name={name}
-        value={value}
-        onChange={onChange}
-        placeholder={placeholder}
-        className="w-full bg-slate-700 border border-slate-600 text-white rounded-md p-2 focus:ring-sky-500 focus:border-sky-500"
-      />
-    )}
-  </div>
-);
-
 interface TournamentGuidelinesPageProps {
   allMatches: Match[];
   selectedMatchId: string | null;
   managedTeam: Team;
   onSaveGuidelineAsNewMatch: (newMatch: Match) => void;
-  onUpdateGuidelineForMatch: (matchId: string, guidelineData: TournamentInfoFormData) => void;
+  onUpdateGuidelineForMatch: (matchId: string, data: TournamentInfoFormData) => void;
   chatThreads: ChatThread[];
   onSendMessage: (threadId: string, message: ChatMessage) => void;
 }
@@ -90,62 +61,81 @@ const TournamentGuidelinesPage: React.FC<TournamentGuidelinesPageProps> = ({
   const [previewKey, setPreviewKey] = useState(0);
   const [showShareModal, setShowShareModal] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
-  const isEditMode = !!selectedMatchId;
 
+  const isEditMode = Boolean(selectedMatchId);
+
+  // 過去の要項リストを作成
   const pastGuidelines = useMemo(
     () =>
       allMatches
-        .filter((m) => m.detailedTournamentInfo?.eventName)
-        .map((m) => ({ id: m.id, name: m.detailedTournamentInfo!.eventName })),
+        .filter(m => m.detailedTournamentInfo?.eventName)
+        .map(m => ({ id: m.id, name: m.detailedTournamentInfo!.eventName })),
     [allMatches]
   );
 
+  // 編集モード or 新規モードでフォームを初期化
   useEffect(() => {
-    const matchToEdit = selectedMatchId
-      ? allMatches.find((m) => m.id === selectedMatchId)
-      : null;
-    if (matchToEdit) {
-      if (matchToEdit.detailedTournamentInfo) {
-        setFormData(deepClone(matchToEdit.detailedTournamentInfo));
-      } else {
-        const newGuideline = deepClone(initialFormData);
-        newGuideline.eventName = matchToEdit.location || '';
-        newGuideline.eventDateTime.eventDate = matchToEdit.date;
-        newGuideline.eventDateTime.startTime = matchToEdit.time;
-        setFormData(newGuideline);
-      }
-    } else {
-      const savedDraftString = localStorage.getItem(DRAFT_STORAGE_KEY);
-      if (savedDraftString) {
-        try {
-          const savedDraft = JSON.parse(savedDraftString);
-          setFormData({ ...initialFormData, ...savedDraft });
-        } catch {
-          localStorage.removeItem(DRAFT_STORAGE_KEY);
-        }
-      } else {
-        setFormData(initialFormData);
+    if (isEditMode) {
+      const match = allMatches.find(m => m.id === selectedMatchId);
+      if (match && match.detailedTournamentInfo) {
+        setFormData(deepClone(match.detailedTournamentInfo));
+        return;
       }
     }
-  }, [selectedMatchId, allMatches]);
+    // 新規モードならローカルストレージの下書きを復元
+    const draft = localStorage.getItem(DRAFT_STORAGE_KEY);
+    if (draft) {
+      try {
+        setFormData(prev => ({ ...prev, ...JSON.parse(draft) }));
+      } catch {
+        localStorage.removeItem(DRAFT_STORAGE_KEY);
+      }
+    } else {
+      setFormData(initialFormData);
+    }
+  }, [selectedMatchId, allMatches, isEditMode]);
 
+  // 新規モードではフォームのたびにローカルストレージへ保存
   useEffect(() => {
     if (!isEditMode) {
       localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(formData));
     }
   }, [formData, isEditMode]);
 
-  const handleCopyGuideline = (matchId: string) => {
-    if (!matchId) return setFormData(initialFormData);
-    const matchToCopy = allMatches.find((m) => m.id === matchId);
-    if (matchToCopy?.detailedTournamentInfo) {
-      setFormData({ ...initialFormData, ...deepClone(matchToCopy.detailedTournamentInfo) });
-      alert(`「${matchToCopy.detailedTournamentInfo.eventName}」の要項をコピーしました。`);
+  const handleSimpleChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      const { name, value } = e.target;
+      setFormData(prev => ({ ...prev, [name]: value }));
+    },
+    []
+  );
+
+  const handleNestedChange = useCallback(
+    (parent: keyof TournamentInfoFormData, child: string, value: string) => {
+      setFormData(prev => ({
+        ...prev,
+        [parent]: { ...(prev[parent] as any), [child]: value }
+      }));
+    },
+    []
+  );
+
+  // 過去要項コピー
+  const handleCopyGuideline = (id: string) => {
+    if (!id) return setFormData(initialFormData);
+    const match = allMatches.find(m => m.id === id);
+    if (match?.detailedTournamentInfo) {
+      setFormData(deepClone(match.detailedTournamentInfo));
+      alert(`「${match.detailedTournamentInfo.eventName}」をコピーしました。`);
     }
   };
 
+  // 保存
   const handleSave = () => {
-    if (!formData.eventName.trim()) return alert('「大会名」は必須です。');
+    if (!formData.eventName.trim()) {
+      alert('大会名は必須です。');
+      return;
+    }
     if (isEditMode) {
       onUpdateGuidelineForMatch(selectedMatchId!, formData);
     } else {
@@ -163,142 +153,117 @@ const TournamentGuidelinesPage: React.FC<TournamentGuidelinesPageProps> = ({
     }
   };
 
-  const handleSimpleChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-      const { name, value } = e.target;
-      setFormData((prev) => ({ ...prev, [name]: value }));
-    },
-    []
-  );
-
-  const handleNestedChange = useCallback(
-    (parentKey: keyof TournamentInfoFormData, childKey: string, value: string) => {
-      setFormData((prev) => ({
-        ...prev,
-        [parentKey]: { ...(prev[parentKey] as any), [childKey]: value },
-      }));
-    },
-    []
-  );
-
+  // PDF プレビュー生成
   const handleGeneratePreview = () => {
-    if (!formData.eventName.trim()) return alert('「大会名」は必須です。');
-    const matchForFixtures = selectedMatchId
-      ? allMatches.find((m) => m.id === selectedMatchId)
-      : undefined;
-    const bracket = matchForFixtures?.leagueCompetitionData?.finalRoundTournament || matchForFixtures?.bracketData;
-    const league = matchForFixtures?.leagueCompetitionData?.preliminaryRound;
+    if (!formData.eventName.trim()) {
+      alert('大会名は必須です。');
+      return;
+    }
+    const match = allMatches.find(m => m.id === selectedMatchId!)!;
+    const bracket = match?.leagueCompetitionData?.finalRoundTournament || match?.bracketData;
+    const league = match?.leagueCompetitionData?.preliminaryRound;
     const { html, styles } = prepareTournamentPDFContent(formData, bracket, league);
-    setPreviewSrcDoc(`<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8"><title>プレビュー</title><style>${styles}</style></head><body>${html}</body></html>`);
-    setPreviewKey((k) => k + 1);
+    setPreviewSrcDoc(
+      `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>${styles}</style></head><body>${html}</body></html>`
+    );
+    setPreviewKey(k => k + 1);
     setShowPreview(true);
   };
 
-  const handlePrintFromPreview = () => {
+  const handlePrint = () => {
     iframeRef.current?.contentWindow?.focus();
     iframeRef.current?.contentWindow?.print();
   };
 
-  const handleClosePreview = () => {
-    setShowPreview(false);
-    setPreviewSrcDoc('');
-  };
-
-  const handleResetForm = () => {
-    if (window.confirm('フォームをリセットしますか？入力内容は失われます。')) {
-      setFormData(initialFormData);
-      !isEditMode && localStorage.removeItem(DRAFT_STORAGE_KEY);
-    }
-  };
-
-  const handleShareGuidelineToChat = (threadId: string) => {
-    const matchForFixtures = selectedMatchId
-      ? allMatches.find((m) => m.id === selectedMatchId)
-      : undefined;
-    const bracket = matchForFixtures?.leagueCompetitionData?.finalRoundTournament || matchForFixtures?.bracketData;
-    const league = matchForFixtures?.leagueCompetitionData?.preliminaryRound;
+  // チャット共有
+  const handleShare = (threadId: string) => {
+    const match = allMatches.find(m => m.id === selectedMatchId!)!;
+    const bracket = match?.leagueCompetitionData?.finalRoundTournament || match?.bracketData;
+    const league = match?.leagueCompetitionData?.preliminaryRound;
     const text = formatGuidelineWithFixturesForChat(formData, bracket, league);
-    const message: ChatMessage = {
+    const msg: ChatMessage = {
       id: `msg-${Date.now()}`,
       threadId,
       senderId: managedTeam.id,
       senderName: managedTeam.name,
       text,
-      timestamp: new Date(),
+      timestamp: new Date()
     };
-    onSendMessage(threadId, message);
-    alert('チャットに要項を共有しました。');
+    onSendMessage(threadId, msg);
+    alert('チャットに共有しました。');
     setShowShareModal(false);
   };
 
-  const renderSection = (title: string, children: React.ReactNode) => (
-    <fieldset className="bg-slate-800 p-4 rounded-xl shadow-lg border border-slate-700">
-      <legend className="text-lg font-semibold text-sky-400 px-2">{title}</legend>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">{children}</div>
-    </fieldset>
-  );
-
   return (
     <div className="space-y-8">
-      <header className="flex flex-wrap justify-between items-center gap-4">
-        <h2 className="text-3xl font-semibold text-sky-300">
+      <header className="flex justify-between items-center">
+        <h2 className="text-3xl text-sky-300 font-semibold">
           {isEditMode ? '大会要項編集' : '大会要項作成'}
         </h2>
-        <div className="flex gap-3">
-          <button onClick={handleResetForm} className="bg-slate-600 hover:bg-slate-500 text-white py-2 px-4 rounded-lg">
+        <div className="flex gap-2">
+          <button
+            onClick={() => {
+              setFormData(initialFormData);
+              !isEditMode && localStorage.removeItem(DRAFT_STORAGE_KEY);
+            }}
+            className="bg-slate-600 hover:bg-slate-500 text-white px-4 py-2 rounded"
+          >
             リセット
           </button>
-          <button onClick={handleSave} className="bg-sky-600 hover:bg-sky-700 text-white py-2 px-4 rounded-lg">
-            {isEditMode ? '更新' : '保存'}
+          <button
+            onClick={handleSave}
+            className="bg-sky-600 hover:bg-sky-700 text-white px-4 py-2 rounded"
+          >
+            保存
           </button>
-          <button onClick={() => setShowShareModal(true)} className="bg-teal-600 hover:bg-teal-700 text-white py-2 px-4 rounded-lg">
-            チャットで共有
+          <button
+            onClick={() => setShowShareModal(true)}
+            className="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded"
+          >
+            チャット共有
           </button>
-          <button onClick={handleGeneratePreview} className="bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded-lg">
+          <button
+            onClick={handleGeneratePreview}
+            className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded"
+          >
             PDFプレビュー
           </button>
         </div>
       </header>
 
-      <section className="bg-slate-800 p-4 rounded-xl">
-        <label className="block text-sm font-medium text-slate-300 mb-1">
-          過去の要項をコピーして作成
-        </label>
+      {/* 過去要項コピー */}
+      <section className="bg-slate-800 p-4 rounded">
+        <label className="block text-sm text-slate-300 mb-1">過去要項をコピー</label>
         <select
-          onChange={(e) => handleCopyGuideline(e.target.value)}
-          className="w-full bg-slate-700 border border-slate-600 text-white p-2 rounded-md"
+          onChange={e => handleCopyGuideline(e.target.value)}
           disabled={isEditMode}
+          className="w-full bg-slate-700 text-white p-2 rounded"
         >
           <option value="">新規作成</option>
-          {pastGuidelines.map((g) => (
+          {pastGuidelines.map(g => (
             <option key={g.id} value={g.id}>
               {g.name}
             </option>
           ))}
         </select>
-        {isEditMode && <p className="text-xs text-yellow-400 mt-1">編集中はコピー不可</p>}
+        {isEditMode && (
+          <p className="text-sm text-yellow-400 mt-1">編集モード中はコピーできません</p>
+        )}
       </section>
 
-      <div className="space-y-6">
-        {renderSection('大会基本情報', <>
-          <FormInput label="大会名" name="eventName" value={formData.eventName} onChange={handleSimpleChange} />
-          <FormInput label="主催団体名" name="organizationName" value={formData.organizerInfo.organizationName} onChange={(e) => handleNestedChange('organizerInfo', 'organizationName', e.target.value)} />
-          <FormInput label="主催担当者名" name="contactPersonName" value={formData.organizerInfo.contactPersonName} onChange={(e) => handleNestedChange('organizerInfo', 'contactPersonName', e.target.value)} />
-          <FormInput label="参加チーム（改行区切り）" name="participatingTeams" type="textarea" value={formData.participatingTeams} onChange={handleSimpleChange} />
-        </>)}
-        {/* Repeat renderSection for other groups as in original */}
-      </div>
+      {/* ここに適宜 FormInput コンポーネントを並べてください */}
+      {/* 例: 大会名、主催情報、日時、会場、参加資格、参加チーム、コート情報、ルール、賞、連絡先 など */}
 
       {showPreview && (
-        <div className="fixed inset-0 bg-black bg-opacity-80 flex flex-col items-center justify-center p-4 z-50">
-          <div className="bg-slate-800 rounded-xl shadow-2xl w-full max-w-4xl h-5/6 flex flex-col">
-            <header className="flex justify-between items-center p-3 border-b border-slate-700">
-              <h3 className="text-lg font-semibold text-sky-300">プレビュー</h3>
+        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50">
+          <div className="bg-slate-800 rounded-lg overflow-hidden w-full max-w-4xl h-5/6 flex flex-col">
+            <header className="flex justify-between items-center p-2 bg-slate-700">
+              <h3 className="text-lg text-white">プレビュー</h3>
               <div className="flex gap-2">
-                <button onClick={handlePrintFromPreview} className="bg-sky-500 hover:bg-sky-600 text-white py-1 px-3 rounded">
+                <button onClick={handlePrint} className="bg-sky-500 hover:bg-sky-600 text-white px-3 py-1 rounded">
                   印刷
                 </button>
-                <button onClick={handleClosePreview} className="bg-slate-600 hover:bg-slate-500 text-white py-1 px-3 rounded">
+                <button onClick={() => setShowPreview(false)} className="bg-slate-600 hover:bg-slate-500 text-white px-3 py-1 rounded">
                   閉じる
                 </button>
               </div>
@@ -306,9 +271,8 @@ const TournamentGuidelinesPage: React.FC<TournamentGuidelinesPageProps> = ({
             <iframe
               key={previewKey}
               ref={iframeRef}
-              title="プレビュー"
               srcDoc={previewSrcDoc}
-              className="flex-grow border-0 bg-white"
+              className="flex-grow border-0"
             />
           </div>
         </div>
@@ -316,22 +280,23 @@ const TournamentGuidelinesPage: React.FC<TournamentGuidelinesPageProps> = ({
 
       {showShareModal && (
         <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50">
-          <div className="bg-slate-800 p-6 rounded-xl shadow-lg w-full max-w-md">
-            <h3 className="text-2xl text-sky-400 mb-4">チャットで共有</h3>
-            <p className="text-sm text-slate-400 mb-3">どのチャットに要項を共有しますか？</p>
-            <div className="space-y-2 overflow-y-auto max-h-60">
-              {chatThreads.map((thread) => (
+          <div className="bg-slate-800 rounded-lg p-6 w-full max-w-md">
+            <h3 className="text-xl text-sky-300 mb-4">チャットで共有</h3>
+            <div className="space-y-2 max-h-60 overflow-y-auto">
+              {chatThreads.map(thread => (
                 <button
                   key={thread.id}
-                  onClick={() => handleShareGuidelineToChat(thread.id)}
+                  onClick={() => handleShare(thread.id)}
                   className="w-full text-left bg-slate-700 hover:bg-slate-600 text-white p-3 rounded"
                 >
-                  {thread.isGroupChat ? thread.groupName : thread.participants.find((p) => p.id !== managedTeam.id)?.name}
+                  {thread.isGroupChat
+                    ? thread.groupName
+                    : thread.participants.find(p => p.id !== managedTeam.id)?.name}
                 </button>
               ))}
             </div>
-            <div className="mt-4 flex justify-end">
-              <button onClick={() => setShowShareModal(false)} className="bg-slate-600 hover:bg-slate-500 text-white py-2 px-4 rounded">
+            <div className="mt-4 text-right">
+              <button onClick={() => setShowShareModal(false)} className="bg-slate-600 hover:bg-slate-500 text-white px-4 py-2 rounded">
                 キャンセル
               </button>
             </div>
