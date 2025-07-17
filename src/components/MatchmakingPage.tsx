@@ -1,25 +1,28 @@
-// components/MatchmakingPage.tsx
 import React, { useState, useMemo } from 'react';
-import { Team, TeamLevel, MatchmakingFilters } from '../types';
+import { Team, TeamLevel } from '../types';
 
 interface MatchmakingPageProps {
-  allTeams: Team[]; // 全チーム
+  allTeams: Team[]; // All teams available for matchmaking (excluding user's own team)
   onFollowTeam: (teamToFollow: Team) => void;
   followedTeamIds: string[];
-  onSelectTeam: (team: Team) => void;
+  onSelectTeam: (team: Team) => void; // To view profile
 }
 
-const prefectures = ['東京都', '大阪府', '福岡県', '北海道', '神奈川県' /* … */];
-// TeamLevel の列挙値
-const teamLevels = Object.values(TeamLevel) as string[];
-// undefined を除いた ageCategory のリテラル型
-const ageCategories = ['U-10', 'U-12', 'U-15', '一般'] as const;
-type AgeCat = typeof ageCategories[number];
+// hard-code the literal union rather than reach into Team['ageCategory'] at runtime
+const ageCategories: Array<'U-10' | 'U-12' | 'U-15' | '一般'> = [
+  'U-10',
+  'U-12',
+  'U-15',
+  '一般',
+];
+
+const prefectures = ['東京都', '大阪府', '福岡県', '北海道', '神奈川県' /* ... */];
+const teamLevels = Object.values(TeamLevel);
 
 type LocalFilters = {
   prefecture: string[];
-  level: string[];
-  ageCategory: AgeCat[];
+  level: TeamLevel[];
+  ageCategory: Array<'U-10' | 'U-12' | 'U-15' | '一般'>;
   ratingMin?: number;
   ratingMax?: number;
 };
@@ -37,63 +40,80 @@ const MatchmakingPage: React.FC<MatchmakingPageProps> = ({
   });
   const [availableDateFilter, setAvailableDateFilter] = useState('');
 
-  const handleMultiSelectChange = (field: keyof LocalFilters, value: string) => {
-    setFilters(prev => {
-      const arr = prev[field] || [];
-      const next = arr.includes(value)
-        ? arr.filter(v => v !== value)
+  const handleMultiSelectChange = (
+    filterName: keyof Omit<LocalFilters, 'ratingMin' | 'ratingMax'>,
+    value: string
+  ) => {
+    setFilters((prev) => {
+      const arr = prev[filterName] as string[];
+      const newArr = arr.includes(value)
+        ? arr.filter((v) => v !== value)
         : [...arr, value];
-      return { ...prev, [field]: next };
+      return { ...prev, [filterName]: newArr } as LocalFilters;
     });
   };
 
   const handleRatingChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFilters(prev => ({
+    setFilters((prev) => ({
       ...prev,
       [name]: value ? parseInt(value, 10) : undefined,
     }));
   };
 
   const recommendedTeams = useMemo(() => {
-    return allTeams.filter(team => {
-      const inPref = filters.prefecture.length === 0 || filters.prefecture.includes(team.prefecture ?? '');
-      const inLevel = filters.level.length === 0 || filters.level.includes(team.level);
-      const inAge = filters.ageCategory.length === 0 || filters.ageCategory.includes((team.ageCategory ?? '一般') as AgeCat);
-      const minOk = filters.ratingMin == null || team.rating >= filters.ratingMin;
-      const maxOk = filters.ratingMax == null || team.rating <= filters.ratingMax;
-      const dateOk = !availableDateFilter
-        || team.availableSlotsText === '空き'
-        || team.availableSlotsText === '週末のみ空き';
-      return inPref && inLevel && inAge && minOk && maxOk && dateOk;
+    return allTeams.filter((team) => {
+      const prefMatch =
+        filters.prefecture.length > 0
+          ? filters.prefecture.includes(team.prefecture || '')
+          : true;
+      const lvlMatch =
+        filters.level.length > 0 ? filters.level.includes(team.level) : true;
+      const ageMatch =
+        filters.ageCategory.length > 0
+          ? filters.ageCategory.includes(
+              (team.ageCategory as 'U-10' | 'U-12' | 'U-15' | '一般') ?? '一般'
+            )
+          : true;
+      const minMatch = filters.ratingMin
+        ? team.rating >= filters.ratingMin
+        : true;
+      const maxMatch = filters.ratingMax
+        ? team.rating <= filters.ratingMax
+        : true;
+      const dateMatch = availableDateFilter
+        ? team.availableSlotsText === '空き' ||
+          team.availableSlotsText === '週末のみ空き'
+        : true;
+
+      return (
+        prefMatch && lvlMatch && ageMatch && minMatch && maxMatch && dateMatch
+      );
     });
   }, [allTeams, filters, availableDateFilter]);
 
   const FilterTag: React.FC<{
     label: string;
-    value?: string;
+    value: string;
     onRemove?: () => void;
     compact?: boolean;
-  }> = ({ label, value, onRemove, compact }) => {
-    if (!value) return null;
-    return (
-      <span
-        className={`inline-flex items-center ${
-          compact ? 'text-xs px-1.5 py-0.5' : 'text-xs sm:text-sm px-2.5 py-1'
-        } bg-sky-700 text-sky-200 font-medium rounded-full`}
-      >
-        {label}: {value}
-        {onRemove && (
-          <button
-            onClick={onRemove}
-            className={`ml-1 ${compact ? 'text-xs' : 'text-sm'} text-sky-300 hover:text-sky-100`}
-          >
-            &times;
-          </button>
-        )}
-      </span>
-    );
-  };
+  }> = ({ label, value, onRemove, compact = false }) => (
+    <span
+      className={`inline-flex items-center ${
+        compact ? 'text-xs px-1.5 py-0.5' : 'text-xs sm:text-sm px-2.5 py-1'
+      } bg-sky-700 text-sky-200 font-medium rounded-full`}
+    >
+      {label}: {value}
+      {onRemove && (
+        <button
+          onClick={onRemove}
+          className={`ml-1 ${compact ? 'text-xs' : 'text-sm'} text-sky-300 hover:text-sky-100`}
+        >
+          &times;
+        </button>
+      )}
+    </span>
+  );
 
   return (
     <div className="space-y-6">
@@ -107,7 +127,7 @@ const MatchmakingPage: React.FC<MatchmakingPageProps> = ({
               都道府県
             </h4>
             <div className="space-y-0.5 max-h-28 sm:max-h-32 overflow-y-auto pr-1">
-              {prefectures.map(pref => (
+              {prefectures.map((pref) => (
                 <label
                   key={pref}
                   className="flex items-center space-x-1.5 cursor-pointer text-xs sm:text-sm hover:bg-slate-700 p-0.5 sm:p-1 rounded"
@@ -126,22 +146,20 @@ const MatchmakingPage: React.FC<MatchmakingPageProps> = ({
 
           {/* レベル */}
           <div>
-            <h4 className="text-sm sm:text-base font-semibold text-slate-300 mb-1.5">
-              レベル
-            </h4>
+            <h4 className="text-sm sm:text-base font-semibold text-slate-300 mb-1.5">レベル</h4>
             <div className="space-y-0.5 max-h-28 sm:max-h-32 overflow-y-auto pr-1">
-              {teamLevels.map(lv => (
+              {teamLevels.map((lvl) => (
                 <label
-                  key={lv}
+                  key={lvl}
                   className="flex items-center space-x-1.5 cursor-pointer text-xs sm:text-sm hover:bg-slate-700 p-0.5 sm:p-1 rounded"
                 >
                   <input
                     type="checkbox"
-                    checked={filters.level.includes(lv)}
-                    onChange={() => handleMultiSelectChange('level', lv)}
+                    checked={filters.level.includes(lvl)}
+                    onChange={() => handleMultiSelectChange('level', lvl)}
                     className="form-checkbox h-3.5 w-3.5 sm:h-4 sm:w-4 bg-slate-600 border-slate-500 text-sky-500 focus:ring-sky-500"
                   />
-                  <span>{lv}</span>
+                  <span>{lvl}</span>
                 </label>
               ))}
             </div>
@@ -153,7 +171,7 @@ const MatchmakingPage: React.FC<MatchmakingPageProps> = ({
               年齢カテゴリ
             </h4>
             <div className="space-y-0.5 max-h-28 sm:max-h-32 overflow-y-auto pr-1">
-              {ageCategories.map(age => (
+              {ageCategories.map((age) => (
                 <label
                   key={age}
                   className="flex items-center space-x-1.5 cursor-pointer text-xs sm:text-sm hover:bg-slate-700 p-0.5 sm:p-1 rounded"
@@ -204,7 +222,7 @@ const MatchmakingPage: React.FC<MatchmakingPageProps> = ({
             <input
               type="date"
               value={availableDateFilter}
-              onChange={e => setAvailableDateFilter(e.target.value)}
+              onChange={(e) => setAvailableDateFilter(e.target.value)}
               className="w-full bg-slate-700 p-1.5 rounded-md border border-slate-600 text-slate-400 text-xs sm:text-sm"
             />
             <p className="text-xs text-slate-500 mt-0.5">
@@ -214,9 +232,9 @@ const MatchmakingPage: React.FC<MatchmakingPageProps> = ({
         </div>
       </div>
 
-      {/* 選択中フィルター */}
+      {/* Active Filter Tags */}
       <div className="my-3 space-x-1.5 space-y-1.5">
-        {filters.prefecture.map(p => (
+        {filters.prefecture.map((p) => (
           <FilterTag
             key={p}
             label="県"
@@ -225,37 +243,41 @@ const MatchmakingPage: React.FC<MatchmakingPageProps> = ({
             compact
           />
         ))}
-        {filters.level.map(lv => (
+        {filters.level.map((l) => (
           <FilterTag
-            key={lv}
+            key={l}
             label="Lv"
-            value={lv.slice(0, 2)}
-            onRemove={() => handleMultiSelectChange('level', lv)}
+            value={l.substring(0, 2)}
+            onRemove={() => handleMultiSelectChange('level', l)}
             compact
           />
         ))}
-        {filters.ageCategory.map(ac => (
+        {filters.ageCategory.map((a) => (
           <FilterTag
-            key={ac}
+            key={a}
             label="年"
-            value={ac}
-            onRemove={() => handleMultiSelectChange('ageCategory', ac)}
+            value={a}
+            onRemove={() => handleMultiSelectChange('ageCategory', a)}
             compact
           />
         ))}
-        {filters.ratingMin != null && (
+        {filters.ratingMin !== undefined && (
           <FilterTag
             label="minR"
             value={String(filters.ratingMin)}
-            onRemove={() => setFilters(f => ({ ...f, ratingMin: undefined }))}
+            onRemove={() =>
+              setFilters((f) => ({ ...f, ratingMin: undefined }))
+            }
             compact
           />
         )}
-        {filters.ratingMax != null && (
+        {filters.ratingMax !== undefined && (
           <FilterTag
             label="maxR"
             value={String(filters.ratingMax)}
-            onRemove={() => setFilters(f => ({ ...f, ratingMax: undefined }))}
+            onRemove={() =>
+              setFilters((f) => ({ ...f, ratingMax: undefined }))
+            }
             compact
           />
         )}
@@ -269,13 +291,12 @@ const MatchmakingPage: React.FC<MatchmakingPageProps> = ({
         )}
       </div>
 
-      {/* おすすめチーム一覧 */}
       <h3 className="text-xl sm:text-2xl font-semibold text-sky-300 mt-6">
         おすすめチーム ({recommendedTeams.length}件)
       </h3>
       {recommendedTeams.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-          {recommendedTeams.map(team => (
+          {recommendedTeams.map((team) => (
             <div
               key={team.id}
               className="bg-slate-800 rounded-lg shadow-xl overflow-hidden flex flex-col"
@@ -298,11 +319,23 @@ const MatchmakingPage: React.FC<MatchmakingPageProps> = ({
                   {team.name}
                 </h4>
                 <div className="mb-1.5 sm:mb-2 space-x-1 space-y-1 flex flex-wrap">
-                  <FilterTag label="県" value={team.prefecture?.slice(0, 2)} compact />
+                  <FilterTag
+                    label="県"
+                    value={team.prefecture?.slice(0, 2) ?? '-'}
+                    compact
+                  />
                   <FilterTag label="Lv" value={team.level.slice(0, 2)} compact />
-                  <FilterTag label="年" value={team.ageCategory ?? ''} compact />
+                  <FilterTag
+                    label="年"
+                    value={team.ageCategory ?? '一般'}
+                    compact
+                  />
                   <FilterTag label="R" value={String(team.rating)} compact />
-                  <FilterTag label="空" value={team.availableSlotsText ?? ''} compact />
+                  <FilterTag
+                    label="空"
+                    value={team.availableSlotsText ?? '-'}
+                    compact
+                  />
                 </div>
                 <button
                   onClick={() => onFollowTeam(team)}
